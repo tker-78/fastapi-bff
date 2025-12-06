@@ -34,6 +34,6 @@ KeycloakのAdmin Console(デフォルトではusername: admin, password: admin)�
 
 .envにClient secretを入力する
 
-※ 現在の構成では.envをimport時に読み込むため、
-環境変数を変更した場合は、`docker compose  --build api -d`を使用してください。
+※ 現在の構成では.envをimport時に読み込むため、  
+   環境変数を変更した場合は、`docker compose  --build api -d`を使用してください。
 
