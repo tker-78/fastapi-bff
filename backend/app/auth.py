@@ -1,5 +1,6 @@
 import os
 import httpx
+import time
 from fastapi import HTTPException, Depends, Cookie
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
@@ -33,9 +34,27 @@ async def get_tokens_from_session(session_id: Optional[str] = Cookie(None)):
         raise HTTPException(status_code=401, detail="Invalid session ID")
     return tokens
 
+async def get_valid_token(session_id):
+    if not session_id:
+        raise HTTPException(status_code=401, detail="No session ID")
+    tokens = session_store.get(session_id)
 
-async def verify_token(tokens = Depends(get_tokens_from_session)):
+    refresh_token = tokens.get("refresh_token")
+    if not refresh_token:
+        raise HTTPException(status_code=401, detail="No refresh token")
+    new_tokens = keycloak_openid.refresh_token(refresh_token=refresh_token)
+    new_tokens["expires_at"] = time.time() + new_tokens["expires_in"]
+    session_store[session_id] = new_tokens
+    print("access token refreshed")
+
+    return new_tokens
+
+
+async def verify_token(tokens = Depends(get_tokens_from_session), session_id: Optional[str] = Cookie(None)):
     token = tokens.get("access_token")
+    if time.time() > tokens.get("expires_at"):
+        new_tokens = await get_valid_token(session_id)
+        token = new_tokens.get("access_token")
     try:
         header = jwt.get_unverified_header(token)
         kid = header.get("kid")

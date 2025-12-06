@@ -1,5 +1,6 @@
 import os
 import uuid
+import time
 from fastapi import FastAPI, Request, Response, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
@@ -57,6 +58,7 @@ async def callback( request: Request, code: str, state: str) -> Response:
     )
 
     session_id = str(uuid.uuid4())
+    tokens["expires_at"] = time.time() + tokens["expires_in"]
     session_store[session_id] = tokens
 
     print(session_store)
@@ -92,6 +94,7 @@ async def verify_token(payload = Depends(verify_token)):
 
 @app.get("/api/protected")
 async def protected(payload = Depends(login_required)):
+    print(session_store)
     return {"message": "Hello World. This is protected."}
 
 
